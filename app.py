@@ -10,6 +10,11 @@ import csv
 import folium
 import geocoder
 
+import time
+import json
+import requests
+import sqlite3
+
 from apscheduler.schedulers.background import BackgroundScheduler
 import os
 
@@ -66,14 +71,14 @@ def map_w01_6():
 #####################
 def job_wakeup():
     print('cron fun1: awake myself')
-    url = 'https://malo-cron2.herokuapp.com/'
+    url = 'https://malo-cron2.herokuapp.com/' #改成自己的
     r = requests.get(url)
     print(r)
 
 def send_line(msg, token='rpHUQIIMkArQh6EtQpqfjK6hjPN2jjNxh0zDbcFVoD2'):
     url = "https://notify-api.line.me/api/notify"  # --> 不支援http, 只能用https
     headers = {"Authorization" : "Bearer "+ token}
-    title = 'Fred排程測試'
+    title = 'Fred'
     message =  '[%s] %s' %(title, msg)
     payload = {"message" :  message}
 
@@ -86,9 +91,17 @@ def job_function2():
     print(r)
     data = r.json()
     records = data['records']
+    uuid = ''
+    my_time = ''
+    aqi = ''
+    m25 = ''
     for item in records:
-        if item['County']=='高雄市' and item['SiteName']=='鳳山':
-            send_line('%s>> AQI=%s' %(item['SiteName'], item['AQI']))
+        if item['County']=='花蓮市':
+            uuid = item['SiteName']
+            my_time = item['PublishTime']
+            aqi = item['AQI']
+            pm25 = item['PM2.5']
+            send_line('[%s] %s>> AQI=%s' %(item['County'],item['SiteName'], item['AQI'],item['PM2.5']))
 
 def start_scheduler():
     scheduler = BackgroundScheduler()
@@ -97,8 +110,8 @@ def start_scheduler():
     #scheduler.add_job(job_wakeup, 'cron', minute='*/10')
 
     # 每天早上6:30執行
-    scheduler.add_job(job_function2, 'cron', hour='6', minute='30')
-    #scheduler.add_job(job_function2, 'cron', minute='*/1')
+    #scheduler.add_job(job_function2, 'cron', hour='6', minute='30')
+    scheduler.add_job(job_function2, 'cron', minute='*/1')
 
     # start the scheduler
     scheduler.start()
